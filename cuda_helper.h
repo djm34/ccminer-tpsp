@@ -3,15 +3,24 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <stdint.h>
 
 #ifdef __INTELLISENSE__
 /* reduce vstudio warnings (__byteperm, blockIdx...) */
 #include <device_functions.h>
 #include <device_launch_parameters.h>
 #define __launch_bounds__(max_tpb, min_blocks)
+#define asm("a" : "=l"(result) : "l"(a))
+
+uint32_t __byte_perm(uint32_t x, uint32_t y, uint32_t z);
+uint32_t __shfl(uint32_t x, uint32_t y, uint32_t z);
+uint32_t atomicExch(uint32_t *x, uint32_t y);
+uint32_t atomicAdd(uint32_t *x, uint32_t y);
+void __syncthreads(void);
+void __threadfence(void);
 #endif
 
-#include <stdint.h>
+
 
 #ifndef MAX_GPUS
 #define MAX_GPUS 16
@@ -23,8 +32,11 @@ extern "C"  long device_sm[MAX_GPUS];
 // common functions
 extern void cuda_check_cpu_init(int thr_id, uint32_t threads);
 extern void cuda_check_cpu_setTarget(const void *ptarget);
+extern void cuda_check_cpu_setTarget_mod(const void *ptarget, const void *ptarget2);
+
 extern uint32_t cuda_check_hash(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_inputHash);
-extern uint32_t cuda_check_hash_suppl(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_inputHash, uint8_t numNonce);
+extern uint32_t cuda_check_hash_suppl(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_inputHash, uint32_t numNonce);
+
 extern cudaError_t MyStreamSynchronize(cudaStream_t stream, int situation, int thr_id);
 extern void cudaReportHardwareFailure(int thr_id, cudaError_t error, const char* func);
 extern __device__ __device_builtin__ void __syncthreads(void);
@@ -447,7 +459,14 @@ static __device__ __forceinline__ uint2 vectorize(uint64_t v) {
 	LOHI(result.x, result.y, v);
 	return result;
 }
+static __device__ __forceinline__ uint2 vectorizelow(uint32_t v) {
+	uint2 result;
+	result.x = v;
+	result.y = 0;
+	return result;
+}
 
+static __device__ __forceinline__ uint2 operator^ (uint2 a, uint32_t b) { return make_uint2(a.x^ b, a.y); }
 static __device__ __forceinline__ uint2 operator^ (uint2 a, uint2 b) { return make_uint2(a.x ^ b.x, a.y ^ b.y); }
 static __device__ __forceinline__ uint2 operator& (uint2 a, uint2 b) { return make_uint2(a.x & b.x, a.y & b.y); }
 static __device__ __forceinline__ uint2 operator| (uint2 a, uint2 b) { return make_uint2(a.x | b.x, a.y | b.y); }
@@ -492,6 +511,84 @@ static __device__ __forceinline__ uint2 operator* (uint2 a, uint2 b)
 		: "=r"(result.x), "=r"(result.y) : "r"(a.x), "r"(a.y), "r"(b.x), "r"(b.y));
 	return result;
 }
+
+static __device__ __forceinline__ uint4 mul4 (uint4 a)
+{
+	uint4 result;
+	asm("{\n\t"
+		"mul.lo.u32        %0,%4,%5;  \n\t"
+		"mul.hi.u32        %1,%4,%5;  \n\t"
+		"mul.lo.u32        %2,%6,%7;  \n\t"
+		"mul.hi.u32        %3,%6,%7;  \n\t"
+		"}\n\t"
+		: "=r"(result.x), "=r"(result.y), "=r"(result.z), "=r"(result.w) : "r"(a.x), "r"(a.y), "r"(a.z), "r"(a.w));
+	return result;
+}
+static __device__ __forceinline__ uint4 add4(uint4 a,uint4 b)
+{
+	uint4 result;
+	asm("{\n\t"
+		"add.cc.u32           %0,%4,%8;  \n\t"
+		"addc.u32             %1,%5,%9;  \n\t"
+		"add.cc.u32           %2,%6,%10;  \n\t"
+		"addc.u32             %3,%7,%11;  \n\t"
+		"}\n\t"
+		: "=r"(result.x), "=r"(result.y), "=r"(result.z), "=r"(result.w) : "r"(a.x), "r"(a.y), "r"(a.z), "r"(a.w), "r"(b.x), "r"(b.y), "r"(b.z), "r"(b.w));
+	return result;
+}
+
+static __device__ __forceinline__ uint4 madd4(uint4 a, uint4 b)
+{
+	uint4 result;
+	asm("{\n\t"
+		"mad.lo.cc.u32        %0,%4,%5,%8;  \n\t"
+		"madc.hi.u32          %1,%4,%5,%9;  \n\t"
+		"mad.lo.cc.u32        %2,%6,%7,%10;  \n\t"
+		"madc.hi.u32          %3,%6,%7,%11;  \n\t"
+		"}\n\t"
+		: "=r"(result.x), "=r"(result.y), "=r"(result.z), "=r"(result.w) : "r"(a.x), "r"(a.y), "r"(a.z), "r"(a.w), "r"(b.x), "r"(b.y), "r"(b.z), "r"(b.w));
+	return result;
+}
+
+static __device__ __forceinline__ ulonglong2 madd4long(ulonglong2 a, ulonglong2 b)
+{
+	ulonglong2 result;
+	asm("{\n\t"
+		".reg .u32 a0,a1,a2,a3,b0,b1,b2,b3;\n\t"
+		"mov.b64 {a0,a1}, %2;\n\t"
+		"mov.b64 {a2,a3}, %3;\n\t"
+		"mov.b64 {b0,b1}, %4;\n\t"
+		"mov.b64 {b2,b3}, %5;\n\t"
+		"mad.lo.cc.u32        b0,a0,a1,b0;  \n\t"
+		"madc.hi.u32          b1,a0,a1,b1;  \n\t"
+		"mad.lo.cc.u32        b2,a2,a3,b2;  \n\t"
+		"madc.hi.u32          b3,a2,a3,b3;  \n\t"
+		"mov.b64 %0, {b0,b1};\n\t"
+		"mov.b64 %1, {b2,b3};\n\t"
+		"}\n\t"
+		: "=l"(result.x), "=l"(result.y) : "l"(a.x), "l"(a.y), "l"(b.x), "l"(b.y));
+	return result;
+}
+static __device__ __forceinline__ void madd4long2(ulonglong2 &a, ulonglong2 b)
+{
+	
+	asm ("{\n\t"
+		".reg .u32 a0,a1,a2,a3,b0,b1,b2,b3;\n\t"
+		"mov.b64 {a0,a1}, %0;\n\t"
+		"mov.b64 {a2,a3}, %1;\n\t"
+		"mov.b64 {b0,b1}, %2;\n\t"
+		"mov.b64 {b2,b3}, %3;\n\t"
+		"mad.lo.cc.u32        b0,a0,a1,b0;  \n\t"
+		"madc.hi.u32          b1,a0,a1,b1;  \n\t"
+		"mad.lo.cc.u32        b2,a2,a3,b2;  \n\t"
+		"madc.hi.u32          b3,a2,a3,b3;  \n\t"
+		"mov.b64 %0, {b0,b1};\n\t"
+		"mov.b64 %1, {b2,b3};\n\t"
+		"}\n\t"
+		: "+l"(a.x), "+l"(a.y) : "l"(b.x), "l"(b.y));
+
+}
+
 
 // uint2 ROR/ROL methods
 __device__ __forceinline__
@@ -614,6 +711,20 @@ static uint2 SHR2(uint2 a, int offset)
 	}
 	return a;
 #endif
+}
+__device__ __forceinline__
+uint2 SWAPDWORDS2(uint2 value)
+{
+	return make_uint2(value.y, value.x);
+}
+
+static __device__ __forceinline__ uint64_t devectorizeswap(uint2 v) { return MAKE_ULONGLONG(cuda_swab32(v.y), cuda_swab32(v.x)); }
+static __device__ __forceinline__ uint2 vectorizeswap(uint64_t v) {
+	uint2 result;
+	LOHI(result.y, result.x, v);
+	result.x = cuda_swab32(result.x);
+	result.y = cuda_swab32(result.y);
+	return result;
 }
 
 #endif // #ifndef CUDA_HELPER_H

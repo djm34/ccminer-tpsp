@@ -204,6 +204,38 @@ void format_hashrate(double hashrate, char *output)
 	);
 }
 
+void format_hashrate_average(double hashrate, char *output, char *output2, char *output3)
+{
+	char prefix = '\0';
+
+	if (hashrate < 10000) {
+		// nop
+	}
+	else if (hashrate < 1e7) {
+		prefix = 'k';
+		hashrate *= 1e-3;
+	}
+	else if (hashrate < 1e10) {
+		prefix = 'M';
+		hashrate *= 1e-6;
+	}
+	else if (hashrate < 1e13) {
+		prefix = 'G';
+		hashrate *= 1e-9;
+	}
+	else {
+		prefix = 'T';
+		hashrate *= 1e-12;
+	}
+
+	sprintf(
+		output,
+		prefix ? "%.2f %cH/s" : "%.2f H/s%c",
+		hashrate, prefix
+		);
+}
+
+
 static void databuf_free(struct data_buffer *db)
 {
 	if (!db)
@@ -522,16 +554,16 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 
 	if (!res_val || json_is_null(res_val) ||
 	    (err_val && !json_is_null(err_val))) {
-		char *s;
+		char *s= NULL;
 
 		if (err_val) {
+			s = json_dumps(err_val, 0);
 			json_t *msg = json_object_get(err_val, "message");
 			json_t *err_code = json_object_get(err_val, "code");
 			if (curl_err && json_integer_value(err_code))
 				*curl_err = (int) json_integer_value(err_code);
-			json_decref(err_code);
-
-			s = json_dumps(err_val, 0);
+			
+			
 			if (json_is_string(msg)) {
 				free(s);
 				s = strdup(json_string_value(msg));
@@ -546,7 +578,8 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 		else
 			s = strdup("(unknown reason)");
 
-		applog(LOG_ERR, "JSON-RPC call failed: %s", s);
+		if (!curl_err || opt_debug)
+			 applog(LOG_ERR, "JSON-RPC call failed: %s", s);
 
 		free(s);
 
@@ -721,8 +754,12 @@ void diff_to_target(uint32_t *target, double diff)
 	int k;
 	
 	for (k = 6; k > 0 && diff > 1.0; k--)
-		diff /= 4294967296.0;
-	m = (uint64_t)(4294901760.0 / diff);
+		diff /= 4294967296.0;  // 0x0000000100000000
+
+	m = (uint64_t)(4294901760.0 / diff); // 0x00000000FFFF0000
+//	if (diff > 0.004 )
+    m *=1.0;
+
 	if (m == 0 && k == 6)
 		memset(target, 0xff, 32);
 	else {

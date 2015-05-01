@@ -73,6 +73,21 @@
     <Filter Include="Ressources">
       <UniqueIdentifier>{f5117ccb-a70d-411a-b7ea-d6faed230bc7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\CUDA\neoscrypt">
+      <UniqueIdentifier>{427bcc51-7e07-4a9e-85db-bb9ce1d1fe09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CUDA\lyra2re">
+      <UniqueIdentifier>{26f5d3e4-d054-455c-bbe5-acc783b8a6ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CUDA\pluck">
+      <UniqueIdentifier>{81ef6372-7e6e-4f51-a49a-446625eb0063}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CUDA\SingleAlgo">
+      <UniqueIdentifier>{3a6c73d6-fddc-45f3-a64a-67da98b32c39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CUDA\yescrypt">
+      <UniqueIdentifier>{6daeb9f0-be0f-4cde-8759-08bd5c7a4299}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="compat\jansson\dump.c">
@@ -225,6 +240,18 @@
     <ClCompile Include="lyra2\Sponge.c">
       <Filter>Source Files\sph</Filter>
     </ClCompile>
+    <ClCompile Include="sph\neoscrypt.c">
+      <Filter>Source Files\sph</Filter>
+    </ClCompile>
+    <ClCompile Include="sph\yescrypt-opt.c">
+      <Filter>Source Files\sph</Filter>
+    </ClCompile>
+    <ClCompile Include="sph\yescryptcommon.c">
+      <Filter>Source Files\sph</Filter>
+    </ClCompile>
+    <ClCompile Include="sph\sha256_Y.c">
+      <Filter>Source Files\sph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="compat.h">
@@ -371,12 +398,21 @@
     <ClInclude Include="res\resource.h">
       <Filter>Ressources</Filter>
     </ClInclude>
+    <ClInclude Include="sph\neoscrypt.h">
+      <Filter>Header Files\sph</Filter>
+    </ClInclude>
+    <ClInclude Include="sph\yescrypt.h">
+      <Filter>Header Files\sph</Filter>
+    </ClInclude>
+    <ClInclude Include="sph\sysendian.h">
+      <Filter>Header Files\sph</Filter>
+    </ClInclude>
+    <ClInclude Include="sph\sha256_Y.h">
+      <Filter>Header Files\sph</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cuda.cpp">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="cuda_groestlcoin.cu">
       <Filter>Source Files\CUDA</Filter>
     </CudaCompile>
     <CudaCompile Include="groestl_functions_quad.cu">
@@ -391,17 +427,8 @@
     <CudaCompile Include="JHA\jackpotcoin.cu">
       <Filter>Source Files\CUDA\JHA</Filter>
     </CudaCompile>
-    <CudaCompile Include="cuda_myriadgroestl.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
     <CudaCompile Include="JHA\cuda_jha_compactionTest.cu">
       <Filter>Source Files\CUDA\JHA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="pluck\pluck.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="pluck\cuda_pluck.cu">
-      <Filter>Source Files\CUDA</Filter>
     </CudaCompile>
     <CudaCompile Include="quark\cuda_jh512.cu">
       <Filter>Source Files\CUDA\quark</Filter>
@@ -462,9 +489,6 @@
     </CudaCompile>
     <CudaCompile Include="qubit\qubit_luffa512.cu">
       <Filter>Source Files\CUDA\qubit</Filter>
-    </CudaCompile>
-    <CudaCompile Include="cuda_nist5.cu">
-      <Filter>Source Files\CUDA</Filter>
     </CudaCompile>
     <CudaCompile Include="x11\cuda_x11_aes.cu">
       <Filter>Source Files\CUDA\x11</Filter>
@@ -538,17 +562,8 @@
     <CudaCompile Include="x17\x17.cu">
       <Filter>Source Files\CUDA\x17</Filter>
     </CudaCompile>
-    <CudaCompile Include="pentablake.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
     <CudaCompile Include="x11\s3.cu">
       <Filter>Source Files\CUDA\x11</Filter>
-    </CudaCompile>
-    <CudaCompile Include="Algo256\blake256.cu">
-      <Filter>Source Files\CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="Algo256\keccak256.cu">
-      <Filter>Source Files\CUDA</Filter>
     </CudaCompile>
     <CudaCompile Include="Algo256\cuda_blake256.cu">
       <Filter>Source Files\CUDA\Algo256</Filter>
@@ -565,11 +580,50 @@
     <CudaCompile Include="Algo256\cuda_skein256.cu">
       <Filter>Source Files\CUDA\Algo256</Filter>
     </CudaCompile>
-    <CudaCompile Include="lyra2\cuda_lyra2.cu">
-      <Filter>Source Files\CUDA</Filter>
+    <CudaCompile Include="quark\cuda_nist5.cu">
+      <Filter>Source Files\CUDA\quark</Filter>
+    </CudaCompile>
+    <CudaCompile Include="quark\cuda_quark_groestl512_sm20.cu">
+      <Filter>Source Files\CUDA\quark</Filter>
+    </CudaCompile>
+    <CudaCompile Include="neoscrypt\cuda_neoscrypt.cu">
+      <Filter>Source Files\CUDA\neoscrypt</Filter>
+    </CudaCompile>
+    <CudaCompile Include="neoscrypt\neoscrypt.cu">
+      <Filter>Source Files\CUDA\neoscrypt</Filter>
     </CudaCompile>
     <CudaCompile Include="lyra2\lyra2RE.cu">
-      <Filter>Source Files\CUDA</Filter>
+      <Filter>Source Files\CUDA\lyra2re</Filter>
+    </CudaCompile>
+    <CudaCompile Include="lyra2\cuda_lyra2.cu">
+      <Filter>Source Files\CUDA\lyra2re</Filter>
+    </CudaCompile>
+    <CudaCompile Include="pluck\cuda_pluck.cu">
+      <Filter>Source Files\CUDA\pluck</Filter>
+    </CudaCompile>
+    <CudaCompile Include="pluck\pluck.cu">
+      <Filter>Source Files\CUDA\pluck</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Algo256\blake256.cu">
+      <Filter>Source Files\CUDA\SingleAlgo</Filter>
+    </CudaCompile>
+    <CudaCompile Include="cuda_groestlcoin.cu">
+      <Filter>Source Files\CUDA\SingleAlgo</Filter>
+    </CudaCompile>
+    <CudaCompile Include="cuda_myriadgroestl.cu">
+      <Filter>Source Files\CUDA\SingleAlgo</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Algo256\keccak256.cu">
+      <Filter>Source Files\CUDA\SingleAlgo</Filter>
+    </CudaCompile>
+    <CudaCompile Include="pentablake.cu">
+      <Filter>Source Files\CUDA\SingleAlgo</Filter>
+    </CudaCompile>
+    <CudaCompile Include="yescrypt\yescrypt.cu">
+      <Filter>Source Files\CUDA\yescrypt</Filter>
+    </CudaCompile>
+    <CudaCompile Include="yescrypt\cuda_yescrypt.cu">
+      <Filter>Source Files\CUDA\yescrypt</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

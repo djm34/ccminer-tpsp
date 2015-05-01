@@ -34,8 +34,8 @@
 #include <stdint.h>
 #include <memory.h>
 
-#include "cuda_helper.h"
 #include "cuda_vector.h"
+#include "miner.h"
 
 uint32_t *d_PlNonce[MAX_GPUS];
 
@@ -297,6 +297,8 @@ void pluck_gpu_hash0_v50(uint32_t threads, uint32_t startNonce)
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 	if (thread < threads)
 	{
+
+		#if __CUDA_ARCH__ >= 320
 		const uint32_t nonce = startNonce + thread;
 
 		uint32_t shift = SHIFT * thread;
@@ -341,6 +343,7 @@ void pluck_gpu_hash0_v50(uint32_t threads, uint32_t startNonce)
 			}
 
 		} // main loop
+#endif
 	}
 }
 
@@ -351,6 +354,8 @@ void pluck_gpu_hash_v50(uint32_t threads, uint32_t startNonce, uint32_t *nonceVe
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 	if (thread < threads)
 	{
+
+		#if __CUDA_ARCH__ >= 320
 		const uint32_t nonce = startNonce + thread;
 
 		uint32_t shift = SHIFT * thread;
@@ -405,7 +410,7 @@ void pluck_gpu_hash_v50(uint32_t threads, uint32_t startNonce, uint32_t *nonceVe
 		if (outbuf <= pTarget[7]) {
 			nonceVector[0] = nonce;
 		}
-
+#endif
 	}
 }
 
@@ -415,6 +420,8 @@ void pluck_gpu_hash0(uint32_t threads, uint32_t startNonce)
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 	if (thread < threads)
 	{
+
+		#if __CUDA_ARCH__ >= 320
 		const uint32_t nonce = startNonce + thread;
 
 		uint32_t shift = SHIFT * thread;
@@ -459,7 +466,7 @@ void pluck_gpu_hash0(uint32_t threads, uint32_t startNonce)
 			}
 
 		} // main loop
-
+#endif
 	}
 }
 
@@ -469,6 +476,8 @@ void pluck_gpu_hash(uint32_t threads, uint32_t startNonce, uint32_t *nonceVector
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 	if (thread < threads)
 	{
+
+		#if __CUDA_ARCH__ >= 320
 		const uint32_t nonce = startNonce + thread;
 
 		uint32_t shift = SHIFT * thread;
@@ -526,7 +535,7 @@ void pluck_gpu_hash(uint32_t threads, uint32_t startNonce, uint32_t *nonceVector
 		if (outbuf <= pTarget[7]) {
 			nonceVector[0] = nonce;
 		}
-
+#endif
 	}
 }
 
@@ -548,8 +557,11 @@ uint32_t pluck_cpu_hash(int thr_id, uint32_t threads, uint32_t startNounce,  int
 	dim3 block(threadsperblock);
 	dim3 grid50((threads + 256 - 1) / 256);
 	dim3 block50(256);
-
-	if (device_sm[device_map[thr_id]] >= 500) {
+	if (device_sm[device_map[thr_id]] <= 300) {
+		applog(LOG_ERR, "Sorry pluck not supported on SM 3.0 devices");
+		return 0;
+		
+	} else if (device_sm[device_map[thr_id]] >= 500) {
 		pluck_gpu_hash0_v50 <<< grid50, block50 >>>(threads, startNounce);
 		pluck_gpu_hash_v50  <<< grid50, block50 >>>(threads, startNounce, d_PlNonce[thr_id]);
 	} else {
