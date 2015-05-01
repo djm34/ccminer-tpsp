@@ -4,7 +4,7 @@
 #include "cuda_helper.h"
 
 __constant__ uint64_t c_State[25];
-__constant__ uint32_t c_PaddedMessage[18];
+__constant__ uint32_t c_PaddedMessage[18]; 
 
 #define U32TO64_LE(p) \
     (((uint64_t)(*p)) | (((uint64_t)(*(p + 1))) << 32))
@@ -31,7 +31,7 @@ __constant__ uint64_t c_keccak_round_constants[24];
 
 static __device__ __forceinline__ void
 keccak_block(uint64_t *s, const uint32_t *in, const uint64_t *keccak_round_constants) {
-    size_t i;
+    int i;
     uint64_t t[5], u[5], v, w;
 
     /* absorb input */
@@ -131,7 +131,7 @@ __global__ void jackpot_keccak512_gpu_hash(uint32_t threads, uint32_t startNounc
         uint32_t hash[16];
 
 #pragma unroll 8
-        for (size_t i = 0; i < 64; i += 8) {
+        for (int i = 0; i < 64; i += 8) {
             U64TO32_LE((&hash[i/4]), keccak_gpu_state[i / 8]);
         }
 
@@ -522,7 +522,7 @@ __host__ void jackpot_keccak512_cpu_setBlock(void *pdata, size_t inlen)
                         0, cudaMemcpyHostToDevice);
 }
 
-__host__ void jackpot_keccak512_cpu_hash(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash, int order)
+__host__ void jackpot_keccak512_cpu_hash(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash)
 {
     const uint32_t threadsperblock = 256;
 
@@ -530,9 +530,5 @@ __host__ void jackpot_keccak512_cpu_hash(int thr_id, uint32_t threads, uint32_t 
     dim3 grid((threads + threadsperblock-1)/threadsperblock);
     dim3 block(threadsperblock);
 
-    // Größe des dynamischen Shared Memory Bereichs
-    size_t shared_size = 0;
-
-    jackpot_keccak512_gpu_hash<<<grid, block, shared_size>>>(threads, startNounce, (uint64_t*)d_hash);
-    MyStreamSynchronize(NULL, order, thr_id);
+    jackpot_keccak512_gpu_hash<<<grid, block>>>(threads, startNounce, (uint64_t*)d_hash);
 }

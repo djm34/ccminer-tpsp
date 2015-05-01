@@ -1,8 +1,14 @@
 // SM 2.1 variant
+#include <cuda.h>
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 
-// #include "cuda_helper.h"
+#include <stdio.h>
+#include <memory.h>
+#include <stdint.h>
+#include "cuda_helper.h"
 
-#define MAXWELL_OR_FERMI 0
+#define MAXWELL_OR_FERMI 1
 #define USE_SHARED 1
 
 // #define SPH_C32(x)    ((uint32_t)(x ## U))
@@ -13,14 +19,14 @@
 #define QC32up(j, r)   0xFFFFFFFF
 #define QC32dn(j, r)   (((uint32_t)(r) << 24) ^ SPH_T32(~((uint32_t)(j) << 24)))
 
-#define B32_0(x)    __byte_perm(x, 0, 0x4440)
-//((x) & 0xFF)
-#define B32_1(x)    __byte_perm(x, 0, 0x4441)
-//(((x) >> 8) & 0xFF)
-#define B32_2(x)    __byte_perm(x, 0, 0x4442)
-//(((x) >> 16) & 0xFF)
-#define B32_3(x)    __byte_perm(x, 0, 0x4443)
-//((x) >> 24)
+//#define B32_0(x)    __byte_perm(x, 0, 0x4440)
+#define B32_0(x)  ((x) & 0xFF)
+//#define B32_1(x)    __byte_perm(x, 0, 0x4441)
+#define B32_1(x)  (((x) >> 8) & 0xFF)
+//#define B32_2(x)    __byte_perm(x, 0, 0x4442)
+#define B32_2(x)  (((x) >> 16) & 0xFF)
+//#define B32_3(x)    __byte_perm(x, 0, 0x4443)
+#define B32_3(x)  ((x) >> 24)
 
 // a healthy mix between shared and textured access provides the highest speed on Compute 3.0 and 3.5!
 #define T0up(x) (*((uint32_t*)mixtabs + (    (x))))
@@ -50,7 +56,7 @@ extern uint32_t T2dn_cpu[];
 extern uint32_t T3up_cpu[];
 extern uint32_t T3dn_cpu[];
 
-#if __CUDA_ARCH__ < 300
+#if __CUDA_ARCH__ <= 300
 
 __device__ __forceinline__
 void quark_groestl512_perm_P(uint32_t *a, char *mixtabs)
@@ -202,9 +208,9 @@ void quark_groestl512_perm_Q(uint32_t *a, char *mixtabs)
 #endif
 
 __global__
-void quark_groestl512_gpu_hash_64(uint32_t threads, uint32_t startNounce, uint32_t *g_hash, uint32_t *g_nonceVector)
+void quark_groestl512_gpu_hash_64_sm20(uint32_t threads, uint32_t startNounce, uint32_t *g_hash, uint32_t *g_nonceVector)
 {
-#if __CUDA_ARCH__ < 300
+#if __CUDA_ARCH__ <= 300
 	extern __shared__ char mixtabs[];
 
 	if (threadIdx.x < 256)
@@ -301,14 +307,14 @@ void quark_groestl512_sm20_init(int thr_id, uint32_t threads)
 __host__
 void quark_groestl512_sm20_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order)
 {
-	int threadsperblock = 512;
+	int threadsperblock = 256;
 
 	dim3 grid((threads + threadsperblock-1)/threadsperblock);
 	dim3 block(threadsperblock);
 
 	size_t shared_size = 8 * 256 * sizeof(uint32_t);
 
-	quark_groestl512_gpu_hash_64<<<grid, block, shared_size>>>(threads, startNounce, d_hash, d_nonceVector);
+	quark_groestl512_gpu_hash_64_sm20<<<grid, block, shared_size>>>(threads, startNounce, d_hash, d_nonceVector);
 
 	// MyStreamSynchronize(NULL, order, thr_id);
 }
@@ -323,8 +329,8 @@ void quark_doublegroestl512_sm20_hash_64(int thr_id, uint32_t threads, uint32_t 
 
 	size_t shared_size = 8 * 256 * sizeof(uint32_t);
 
-	quark_groestl512_gpu_hash_64<<<grid, block, shared_size>>>(threads, startNounce, d_hash, d_nonceVector);
-	quark_groestl512_gpu_hash_64<<<grid, block, shared_size>>>(threads, startNounce, d_hash, d_nonceVector);
+	quark_groestl512_gpu_hash_64_sm20<<<grid, block, shared_size>>>(threads, startNounce, d_hash, d_nonceVector);
+	quark_groestl512_gpu_hash_64_sm20<<<grid, block, shared_size>>>(threads, startNounce, d_hash, d_nonceVector);
 
 	// MyStreamSynchronize(NULL, order, thr_id);
 }

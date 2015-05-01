@@ -176,8 +176,8 @@
       <CInterleavedPTX>false</CInterleavedPTX>
       <MaxRegCount>80</MaxRegCount>
       <PtxAsOptionV>true</PtxAsOptionV>
-      <Keep>false</Keep>
-      <CodeGeneration>compute_50,sm_50;</CodeGeneration>
+      <Keep>true</Keep>
+      <CodeGeneration>compute_52,sm_52;compute_50,sm_50;compute_35,sm_35</CodeGeneration>
       <AdditionalOptions>--ptxas-options="-O2" %(AdditionalOptions)</AdditionalOptions>
       <Defines>
       </Defines>
@@ -248,6 +248,10 @@
       <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
       <Optimization Condition="'$(Configuration)'=='Release'">Full</Optimization>
     </ClCompile>
+    <ClCompile Include="sph\neoscrypt.c" />
+    <ClCompile Include="sph\sha256_Y.c" />
+    <ClCompile Include="sph\yescrypt-opt.c" />
+    <ClCompile Include="sph\yescryptcommon.c" />
     <ClCompile Include="util.cpp" />
     <ClCompile Include="fuguecoin.cpp" />
     <ClCompile Include="groestlcoin.cpp" />
@@ -320,6 +324,8 @@
     <ClInclude Include="miner.h" />
     <ClInclude Include="nvml.h" />
     <ClInclude Include="res\resource.h" />
+    <ClInclude Include="sph\neoscrypt.h" />
+    <ClInclude Include="sph\sha256_Y.h" />
     <ClInclude Include="sph\sph_blake.h" />
     <ClInclude Include="sph\sph_bmw.h" />
     <ClInclude Include="sph\sph_cubehash.h" />
@@ -338,6 +344,8 @@
     <ClInclude Include="sph\sph_hamsi.h" />
     <ClInclude Include="sph\sph_types.h" />
     <ClInclude Include="sph\sph_whirlpool.h" />
+    <ClInclude Include="sph\sysendian.h" />
+    <ClInclude Include="sph\yescrypt.h" />
     <ClInclude Include="uint256.h" />
   </ItemGroup>
   <ItemGroup>
@@ -352,8 +360,6 @@
     <CudaCompile Include="cuda_groestlcoin.cu">
     </CudaCompile>
     <CudaCompile Include="cuda_myriadgroestl.cu">
-    </CudaCompile>
-    <CudaCompile Include="cuda_nist5.cu">
     </CudaCompile>
     <CudaCompile Include="groestl_functions_quad.cu">
       <ExcludedFromBuild>true</ExcludedFromBuild>
@@ -394,6 +400,8 @@
       <MaxRegCount>92</MaxRegCount>
     </CudaCompile>
     <CudaCompile Include="Algo256\cuda_skein256.cu" />
+    <CudaCompile Include="neoscrypt\cuda_neoscrypt.cu" />
+    <CudaCompile Include="neoscrypt\neoscrypt.cu" />
     <CudaCompile Include="pentablake.cu">
       <MaxRegCount>80</MaxRegCount>
       <AdditionalOptions Condition="'$(Configuration)'=='Release'">--ptxas-options="-dlcm=cg" %(AdditionalOptions)</AdditionalOptions>
@@ -407,6 +415,7 @@
     <CudaCompile Include="quark\cuda_jh512.cu">
       <MaxRegCount>80</MaxRegCount>
     </CudaCompile>
+    <CudaCompile Include="quark\cuda_nist5.cu" />
     <CudaCompile Include="quark\cuda_quark_blake512.cu">
       <MaxRegCount>80</MaxRegCount>
     </CudaCompile>
@@ -421,6 +430,7 @@
     <CudaCompile Include="pluck\cuda_pluck.cu" />
     <CudaCompile Include="quark\cuda_quark_groestl512.cu">
     </CudaCompile>
+    <CudaCompile Include="quark\cuda_quark_groestl512_sm20.cu" />
     <CudaCompile Include="quark\cuda_quark_keccak512.cu">
       <MaxRegCount>88</MaxRegCount>
     </CudaCompile>
@@ -488,6 +498,8 @@
     </CudaCompile>
     <CudaCompile Include="x17\x17.cu">
     </CudaCompile>
+    <CudaCompile Include="yescrypt\cuda_yescrypt.cu" />
+    <CudaCompile Include="yescrypt\yescrypt.cu" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\ccminer.ico" />
