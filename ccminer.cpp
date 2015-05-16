@@ -1283,7 +1283,7 @@ static void *miner_thread(void *userdata)
 
 		if (have_stratum) {
 			uint32_t sleeptime = 0;
-			while (!work_done && time(NULL) >= (g_work_time + opt_scantime)) {
+			while (!work_done && time(NULL) >= (g_work_time + 60)) {
 				usleep(100*1000);
 				if (sleeptime > 4) {
 					extrajob = true;
