@@ -249,6 +249,21 @@ uint64_t xandx(uint64_t a, uint64_t b, uint64_t c)
 	return result;
 }
 
+__device__ __forceinline__
+uint32_t xandx(uint32_t a, uint32_t b, uint32_t c)
+{
+	uint32_t result;
+	asm("{\n\t"
+		".reg .u32 n;\n\t"
+		"xor.b32 %0, %2, %3;\n\t"
+		"and.b32 n, %0, %1;\n\t"
+		"xor.b32 %0, n, %3;"
+		"}\n"
+		: "=r"(result) : "r"(a), "r"(b), "r"(c));
+	return result;
+}
+
+
 // device asm for x17
 __device__ __forceinline__
 uint64_t sph_t64(uint64_t x)
