@@ -37,9 +37,9 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "sph/yescrypt.h"
-#include "sph/sha256_Y.h"
-#include "sph/sysendian.h"
+#include "yescrypt.h"
+#include "sha256_Y.h"
+#include "sysendian.h"
 
 // #include "sph/yescrypt-platform.c"
 #define HUGEPAGE_THRESHOLD		(12 * 1024 * 1024)

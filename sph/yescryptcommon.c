@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "sph/yescrypt.h"
+#include <pthread.h>
 
 #define BYTES2CHARS(bytes) \
 	((((bytes) * 8) + 5) / 6)
@@ -325,13 +326,17 @@ yescrypt_bsty(const uint8_t * passwd, size_t passwdlen,
     const uint8_t * salt, size_t saltlen, uint64_t N, uint32_t r, uint32_t p,
     uint8_t * buf, size_t buflen)
 {
-//	static __thread int initialized = 0;
-//	static __thread yescrypt_shared_t shared;
-//	static __thread yescrypt_local_t local;
 
+#ifdef WIN32
 		static __declspec(thread) int initialized = 0;
 		static __declspec(thread) yescrypt_shared_t shared;
 		static  __declspec(thread) yescrypt_local_t local;
+#else
+		static __thread int initialized = 0;
+		static __thread yescrypt_shared_t shared;
+		static __thread yescrypt_local_t local;
+#endif
+
 
 	int retval;
 	if (!initialized) {
