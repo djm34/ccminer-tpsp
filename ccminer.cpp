@@ -80,6 +80,7 @@ struct workio_cmd {
 
 enum sha_algos {
 	ALGO_ANIME,
+    ALGO_BITC,
 	ALGO_BLAKE,
 	ALGO_BLAKECOIN,
 	ALGO_DEEP,
@@ -115,6 +116,7 @@ enum sha_algos {
 
 static const char *algo_names[] = {
 	"anime",
+	"credit",
 	"blake",
 	"blakecoin",
 	"deep",
@@ -155,8 +157,8 @@ bool want_longpoll = true;
 bool have_longpoll = false;
 bool want_stratum = true;
 bool have_stratum = false;
-bool allow_gbt = true;
-bool allow_mininginfo = true;
+bool allow_gbt = false;
+bool allow_mininginfo = false;
 bool check_dups = true;
 static bool submit_old = false;
 bool use_syslog = false;
@@ -233,6 +235,7 @@ Usage: " PROGRAM_NAME " [OPTIONS]\n\
 Options:\n\
   -a, --algo=ALGO       specify the hash algorithm to use\n\
 			anime       Animecoin\n\
+            credit      Credit\n\
 			blake       Blake 256 (SFR/NEOS)\n\
 			blakecoin   Fast Blake 256 (8 rounds)\n\
 			deep        Deepcoin\n\
@@ -477,12 +480,26 @@ static bool jobj_binary(const json_t *obj, const char *key,
 
 static bool work_decode(const json_t *val, struct work *work)
 {
-	int data_size = (opt_algo == ALGO_ZIFTR) ? 80 : sizeof(work->data), target_size = sizeof(work->target);
-	int adata_sz = (opt_algo == ALGO_ZIFTR) ? 20 : ARRAY_SIZE(work->data), atarget_sz = ARRAY_SIZE(work->target);
+int data_size,midstate_size;
+	switch (opt_algo) {
+	case ALGO_ZIFTR:
+         data_size=80;
+         break;
+	case ALGO_NEO:
+         data_size=84;
+		 break;
+    case ALGO_BITC:
+         data_size=168;
+         midstate_size=sizeof(work->midstate);
+		 break;
+    default:
+		data_size =128; // original sizeof(work->data); however data is now 64*4bit
+    }
+    int adata_sz = data_size >> 2;
+	int target_size = sizeof(work->target);
+    int atarget_sz = target_size >> 2;
 	int i;
-	data_size = (opt_algo == ALGO_NEO) ? 84 : data_size; //silly and lazy
-	adata_sz = (opt_algo == ALGO_NEO) ? 21 : adata_sz;
-
+//	printf("data size %d",data_size);
 	if (unlikely(!jobj_binary(val, "data", work->data, data_size))) {
 		applog(LOG_ERR, "JSON inval data");
 		return false;
@@ -492,14 +509,28 @@ static bool work_decode(const json_t *val, struct work *work)
 		return false;
 	}
 
+	      if (opt_algo==ALGO_BITC) {
+	if (unlikely(!jobj_binary(val, "midstate", work->midstate, midstate_size))) {
+		applog(LOG_ERR, "JSON inval midstate");
+		return false;
+	} 
+
+	for (i = 0; i < midstate_size; i++)
+		work->midstate[i] = le32dec(work->midstate + i);
+}
+          
+
 	if (opt_algo == ALGO_HEAVY) {
 		if (unlikely(!jobj_binary(val, "maxvote", &work->maxvote, sizeof(work->maxvote)))) {
 			work->maxvote = 2048;
 		}
 	} else work->maxvote = 0;
-
-	for (i = 0; i < adata_sz; i++)
+//	printf("the data: \n");
+	for (i = 0; i < adata_sz; i++) 
 		work->data[i] = le32dec(work->data + i);
+
+//		printf("i %d %08x \n",i, work->data[i]);}
+//	printf("\n");
 	for (i = 0; i < atarget_sz; i++)
 		work->target[i] = le32dec(work->target + i);
 
@@ -704,14 +735,31 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 
 		/* build hex string */
 		char *str = NULL;
-		int data_size = (opt_algo == ALGO_ZIFTR || opt_algo == ALGO_NEO) ? 80 : sizeof(work->data);
+        int data_size;
+		switch (opt_algo) {
+		case ALGO_NEO:
+		case ALGO_ZIFTR:
+			data_size = 80;
+			break;
+		case ALGO_BITC:
+			data_size = 168;
+			break;
+		default:
+			data_size = 128; // original sizeof(work->data); however data is now 64*4bit
+		}
+//		int data_size = (opt_algo == ALGO_ZIFTR || opt_algo == ALGO_NEO) ? 80 : sizeof(work->data);
+//		data_size = (opt_algo == ALGO_BITC) ? 168 : sizeof(work->data);
 		if (opt_algo != ALGO_HEAVY && opt_algo != ALGO_MJOLLNIR) {
 			for (int i = 0; i < (data_size >> 2); i++)
 				le32enc(work->data + i, work->data[i]);
 		}
+//		printf("data size %d\n",data_size);
+//		for (int i = 0; i<42; i++)
+// printf(" %08x ", work->data[i]);
+//		printf("end data_n");
 		str = bin2hex((uchar*)work->data, data_size);
 		if (unlikely(!str)) {
-			applog(LOG_ERR, "submit_upstream_work OOM");
+			applog(LOG_DEBUG, "submit_upstream_work OOM");
 			return false;
 		}
 
@@ -723,7 +771,7 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 		/* issue JSON-RPC request */
 		val = json_rpc_call(curl, rpc_url, rpc_userpass, s, false, false, NULL);
 		if (unlikely(!val)) {
-			applog(LOG_ERR, "submit_upstream_work json_rpc_call failed");
+			applog(LOG_DEBUG, "submit_upstream_work json_rpc_call failed");
 			return false;
 		}
 
@@ -1180,6 +1228,7 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 	switch (opt_algo) {
 		case ALGO_JACKPOT:
 		case ALGO_NEO:
+        case ALGO_BITC:
         case ALGO_YES:
 		case ALGO_PLUCK:
 			diff_to_target(work->target, sctx->job.diff / (65536.0 * opt_difficulty));
@@ -1278,7 +1327,7 @@ static void *miner_thread(void *userdata)
 		uint64_t max64, minmax = 0x100000;
 
 		// &work.data[19]
-		int wcmplen = 76;
+		int wcmplen =  (opt_algo == ALGO_BITC)? 140 : 76;
 		uint32_t *nonceptr = (uint32_t*) (((char*)work.data) + wcmplen);
 
 		if (have_stratum) {
@@ -1602,6 +1651,11 @@ static void *miner_thread(void *userdata)
 			rc = scanhash_yescrypt(thr_id, work.data, work.target, max_nonce, &hashes_done);
 			break;
 
+		case ALGO_BITC:
+			rc = scanhash_bitcredit(thr_id, work.data, work.target,work.midstate, max_nonce, &hashes_done);
+			break;
+
+
 
 		default:
 			/* should never happen */
@@ -1647,10 +1701,11 @@ static void *miner_thread(void *userdata)
 			work.scanned_to = nonceptr[0];
 		else {
 			work.scanned_to = max_nonce;
+
 			if (opt_debug && opt_benchmark) {
 				// to debug nonce ranges
-				applog(LOG_DEBUG, "GPU #%d:  ends=%08x range=%llx", device_map[thr_id],
-					nonceptr[0], (nonceptr[0] - start_nonce));
+//				applog(LOG_DEBUG, "GPU #%d:  ends=%08x range=%llx", device_map[thr_id],
+//					nonceptr[0], (nonceptr[0] - start_nonce));
 			}
 		}
 
@@ -1658,7 +1713,7 @@ static void *miner_thread(void *userdata)
 			hashlog_remember_scan_range(&work);
 
 		/* output */
-		if (!opt_quiet && loopcnt) {
+		if (!opt_quiet && (opt_algo==ALGO_BITC)?(loopcnt%400==0):(loopcnt)) {
 			format_hashrate(thr_hashrates[thr_id], s);
 			applog(LOG_INFO, "GPU #%d: %s, %s",
 				device_map[thr_id], device_name[device_map[thr_id]], s);
