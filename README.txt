@@ -1,5 +1,6 @@
 
-ccMiner release 1.6.0-tpruvot (Mar 2015) - "Pluck & Whirlpoolx"
+ccMiner djm34 release - "Pluck & Whirlpoolx"
+new algo: credits
 ---------------------------------------------------------------
 
 ***************************************************************

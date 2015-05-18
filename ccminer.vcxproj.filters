@@ -88,6 +88,9 @@
     <Filter Include="Source Files\CUDA\yescrypt">
       <UniqueIdentifier>{6daeb9f0-be0f-4cde-8759-08bd5c7a4299}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\CUDA\bitcredit">
+      <UniqueIdentifier>{061050cf-a173-4113-a469-9d29fb52871a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="compat\jansson\dump.c">
@@ -166,9 +169,6 @@
       <Filter>Source Files\sph</Filter>
     </ClCompile>
     <ClCompile Include="sph\md_helper.c">
-      <Filter>Source Files\sph</Filter>
-    </ClCompile>
-    <ClCompile Include="sph\sha2.c">
       <Filter>Source Files\sph</Filter>
     </ClCompile>
     <ClCompile Include="sph\shavite.c">
@@ -250,6 +250,12 @@
       <Filter>Source Files\sph</Filter>
     </ClCompile>
     <ClCompile Include="sph\sha256_Y.c">
+      <Filter>Source Files\sph</Filter>
+    </ClCompile>
+    <ClCompile Include="sph\sha2.c">
+      <Filter>Source Files\sph</Filter>
+    </ClCompile>
+    <ClCompile Include="sph\sph_sha2.c">
       <Filter>Source Files\sph</Filter>
     </ClCompile>
   </ItemGroup>
@@ -624,6 +630,12 @@
     </CudaCompile>
     <CudaCompile Include="yescrypt\cuda_yescrypt.cu">
       <Filter>Source Files\CUDA\yescrypt</Filter>
+    </CudaCompile>
+    <CudaCompile Include="bitcredit\bitcredit.cu">
+      <Filter>Source Files\CUDA\bitcredit</Filter>
+    </CudaCompile>
+    <CudaCompile Include="bitcredit\cuda_bitcredit.cu">
+      <Filter>Source Files\CUDA\bitcredit</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
