@@ -47,8 +47,7 @@ extern "C" int scanhash_bitcredit(int thr_id, uint32_t *pdata,
 	if (opt_benchmark)
 		((uint32_t*)ptarget)[7] = 0x0000ff;
 
-	const uint32_t Htarg = ptarget[7];
-	int coef = 4;
+	
 
 	uint32_t throughput = 256*256*64*8;
 
@@ -65,12 +64,12 @@ extern "C" int scanhash_bitcredit(int thr_id, uint32_t *pdata,
 		init[thr_id] = true;
 	}
 
-	uint32_t endiandata[42],endianmid[8];
+	uint32_t endiandata[42];
 		for (int k = 0; k < 42; k++)
 			be32enc(&endiandata[k], ((uint32_t*)pdata)[k]);
 
 	bitcredit_setBlockTarget(pdata,midstate,ptarget);
-	uint64_t nloop = max_nonce/throughput + 1;
+	
 	do {
 		int order = 0;
 		uint32_t foundNonce = bitcredit_cpu_hash(thr_id, throughput, pdata[35], order++);
