@@ -515,7 +515,7 @@ int data_size,midstate_size;
 		return false;
 	} 
 
-	for (i = 0; i < midstate_size; i++)
+	for (i = 0; i < midstate_size>>2; i++)
 		work->midstate[i] = le32dec(work->midstate + i);
 }
           
