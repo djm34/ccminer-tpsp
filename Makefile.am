@@ -59,7 +59,7 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  x15/whirlpool.cu x15/whirlpoolx.cu x15/cuda_whirlpoolx.cu \
 			  x17/x17.cu x17/cuda_x17_haval512.cu x17/cuda_x17_sha512.cu \
 			  yescrypt/cuda_yescrypt.cu yescrypt/yescrypt.cu \
-			  neocrypt/cuda_neocrypt.cu neocrypt/neocrypt.cu \
+			  neoscrypt/cuda_neoscrypt.cu neoscrypt/neoscrypt.cu \
 			  bitcredit/cuda_bitcredit.cu bitcredit/bitcredit.cu \
 			  x11/s3.cu
 
